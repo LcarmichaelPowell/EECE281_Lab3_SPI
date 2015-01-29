@@ -26,7 +26,7 @@ $include(math32.asm)
 
 CSEG
 
-T_7seg:
+T_7seg: ;Lookup table for Hex keys
     DB 0C0H, 0F9H, 0A4H, 0B0H, 099H
     DB 092H, 082H, 0F8H, 080H, 090H
     DB 088H, 083H
@@ -60,7 +60,7 @@ SendString:
     LCALL putchar
     INC DPTR
     SJMP SendString
-Sendtemp:
+Sendtemp: ;Sends the current temp through the Serial Port
 	mov a, bcd+2
 	anl a,#0FH
 	orl a, #30H
@@ -102,26 +102,9 @@ Sendtemp:
 SSDone:
     ret
 
-Display_BCD:
-	
+Display_BCD:  ;Display_BCD numbers on the Hex keys
 	mov dptr, #T_7seg
 
-	;mov a, bcd+3
-	;swap a
-	;anl a, #0FH
-	;movc a, @a+dptr
-	;mov HEX7, a
-	
-	;mov a, bcd+3
-	;anl a, #0FH
-	;movc a, @a+dptr
-	;mov HEX6, a
-	
-	;mov a, bcd+2
-	;swap a
-	;anl a, #0FH
-	;movc a, @a+dptr
-	;mov HEX5, a
 	mov r0,bcd+2
 	cjne r0,#0,Turn_on
 	sjmp not_100
@@ -159,7 +142,7 @@ Continue_dude:
 	mov HEX2, a
 	
 	ret
-Correct_Voltage:
+Correct_Voltage:  ;Turns the LM355 voltage output into the current temperature 100*(Vout-2.73) Vout=(ADC/1023)*5
 	Load_y(500)
 	lcall mul32
 	
@@ -174,10 +157,7 @@ Correct_Voltage:
 	
 	ret
 	
-Hello_World:
-    DB  'Hello, World!', '\r', '\n', 0
-
-MyProgram:
+MyProgram: ;Clears Inputs, sets out input/output pins (Only runs once)
     MOV SP, #7FH
     mov LEDRA, #0
     mov DEG,#0
@@ -221,7 +201,7 @@ MyProgram:
  
 
     
-Forever:
+Forever:  ;Loop to constantly check the temperature and update Hex/LCD
 	clr p3.7
 	lcall clear_hot
 	clr CE_ADC
@@ -247,21 +227,21 @@ Forever:
 	anl a, #0FH
 	cjne a,#3,Dont_do_yo
 	lcall is_it_hot
-dont_do_yo:
-	jb Key.1,Skip4
+dont_do_yo:     
+	jb Key.1,Skip4 	 ;Checks if user is attemptint to change to Celcus/Fah/Kelvin
 Let_go:
 	jnb Key.1,Let_go	
 	lcall rotate_value
 Skip4:
-	lcall show_the_value
-	lcall hex2bcd
-	lcall Display_BCD
-	lcall sendtemp
-	lcall Current_temp
-	lcall Delay
+	lcall show_the_value		;Converts to the required temp scale	
+	lcall hex2bcd				; Turns the HEX into BCD
+	lcall Display_BCD			; Calls subroutine to display on Hex
+	lcall sendtemp				; Sends temp to Serial Port
+	lcall Current_temp			; Sends Temp to LCD
+	lcall Delay					; Small Delay
 	
 		
-	sjmp Forever
+	sjmp Forever				;Loops Forever
 
 Delay:
 	mov R2, #90
@@ -296,20 +276,20 @@ DO_SPI_G_LOOP:
 	djnz R2, DO_SPI_G_LOOP
 	ret
 
-Degrees_in_C:
+Degrees_in_C:		;Adds C to diplay Units
 	mov HEX0, #1000110B
 	lcall Setting_C
 	ret
-Degrees_in_F:
+Degrees_in_F:		;Adds F to diplay Units
 	mov HEX0, #0001110B
 	lcall Setting_F
 	ret
-Degrees_in_K:
+Degrees_in_K:		;Adds K to diplay Units
 	mov HEX0, #1111111B
 	lcall Setting_K
 	ret
 	
-Rotate_Value:
+Rotate_Value:		;Sets DEG variable depending on current State when button is pressed
 	mov r0,DEG
 	cjne r0,#0,Not_C0
 	lcall Degrees_in_C
@@ -329,7 +309,7 @@ Not_F0:
 skip9:
 	ret
 
-show_the_value:
+show_the_value:		;Changes all the different values depending on the state of the DEG variable that was set above
 	mov r0,DEG
 	cjne r0,#2,Not_in_F
 
@@ -356,7 +336,7 @@ Skip0:
 	Wait40us:
 	mov R0, #149
 	
-X1: 
+X1: 						;All this stuff is for the LCD display
 	nop
 	nop
 	nop
@@ -396,7 +376,7 @@ LCD_put:
 	clr	LCD_EN
 	ljmp Wait40us
 	
-Setting_C:
+Setting_C:			
 	lcall Wait40us
 	djnz R1, Setting_C
 
@@ -569,7 +549,7 @@ Continue_dudea:
 	lcall LCD_put
 	
     ret	    
-Not_too_hot:
+Not_too_hot:				;Checks if it is above the threshold number set in the code
 	mov HOT,#0
 	sjmp light
 	
