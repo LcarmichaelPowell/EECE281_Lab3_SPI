@@ -6,3 +6,5 @@ Third Lab for EECE 281 involving Serial port interfacing with the DE2 and Strip 
 The Subroutine naming is pretty bad, Sorry. 
 
 Python Code uses the Serial output to create a strip chart using the temperatures 
+
+Hello
